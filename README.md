@@ -49,6 +49,7 @@ Tested:
 ### 1. Data Source
 
 ![settings](/assets/settings1.png)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJelteMX%2Fmendix-tree-view.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FJelteMX%2Fmendix-tree-view?ref=badge_shield)
 
 ### 2. Data
 
@@ -117,3 +118,6 @@ These are action items on the list for future releases
 ## License
 
 Apache 2
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJelteMX%2Fmendix-tree-view.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FJelteMX%2Fmendix-tree-view?ref=badge_large)
