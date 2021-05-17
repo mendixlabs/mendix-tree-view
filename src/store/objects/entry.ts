@@ -59,7 +59,7 @@ export class EntryObject {
 
     fixTitle = flow(function*(this: EntryObject) {
         if (this._dynamicTitleMethod) {
-            const title = yield this._dynamicTitleMethod(this._obj);
+            const title = (yield this._dynamicTitleMethod(this._obj)) as string;
             this._title = title;
         }
     });
