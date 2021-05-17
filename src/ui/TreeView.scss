@@ -167,4 +167,8 @@
 	.highlight > .ant-tree-node-content-wrapper .ant-tree-title {
 		font-weight: bold;
 	}
+
+	.ant-tree-treenode.selected > .ant-tree-node-content-wrapper .ant-tree-title {
+		font-weight: bold;
+	}
 }

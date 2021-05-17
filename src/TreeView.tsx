@@ -1,8 +1,8 @@
 import { Component, ReactNode, createElement, ReactElement, createRef } from "react";
 import { findDOMNode } from "react-dom";
+import store from "store2";
 
 import { TreeViewComponent } from "./components/TreeViewComponent";
-import { hot } from "react-hot-loader/root";
 import { TreeViewContainerProps } from "../typings/TreeViewProps";
 
 import "antd/es/tree/style/index.css";
@@ -12,7 +12,7 @@ import "antd/es/input/style/index.css";
 
 import "./ui/TreeView.scss";
 
-import { NodeStore, NodeStoreConstructorOptions } from "./store/index";
+import { NodeStore, NodeStoreConstructorOptions, TableState } from "./store/index";
 import {
     IAction,
     getObjectContextFromObjects,
@@ -47,8 +47,11 @@ class TreeView extends Component<TreeViewContainerProps> {
     executeAction = this._executeAction.bind(this);
     getEntryOptions = this._getEntryOptions.bind(this);
     getClassMethod = this._getClassMethod.bind(this);
+    getInitialState = this._getInitialState.bind(this);
+    writeTableState = this._writeTableState.bind(this);
     clickTypeHandler = this._clickTypeHandler.bind(this);
     createSearchHelper = this._createSearchHelper.bind(this);
+    onLoadSelectionHandler = this._onLoadSelectionHandler.bind(this);
     search = this._search.bind(this);
     debug = this._debug.bind(this);
 
@@ -89,6 +92,10 @@ class TreeView extends Component<TreeViewContainerProps> {
             },
             childLoader: this.fetchChildren,
             validationMessages,
+            getInitialTableState: this.getInitialState,
+            onLoadSelectionHandler: this.onLoadSelectionHandler,
+            writeTableState: this.writeTableState,
+            stateFull: props.stateManagementType !== "disabled" && props.nodeLoadScenario === "all",
             debug: this.debug
         };
 
@@ -333,6 +340,111 @@ class TreeView extends Component<TreeViewContainerProps> {
         }
     }
 
+    // **********************
+    // STATE MANAGEMENT
+    // **********************
+
+    private _getInitialState(guid: string): TableState {
+        const {
+            stateManagementType,
+            stateLocalStorageKey,
+            stateLocalStorageKeyIncludeGUID,
+            // stateExecuteSelectActionOnRestore,
+            stateLocalStorageType
+        } = this.props;
+
+        const key =
+            stateLocalStorageKey !== ""
+                ? `TreeViewState-${stateLocalStorageKey}${stateLocalStorageKeyIncludeGUID ? `-${guid}` : ""}`
+                : `TreeViewState-${guid}`;
+        const currentDateTime = +new Date();
+        const emptyState: TableState = {
+            context: guid,
+            expanded: [],
+            selected: []
+        };
+        if (stateManagementType === "disabled" /* || stateManagementType === "mendix"*/) {
+            return emptyState;
+        }
+        const hasLocalStorage = stateLocalStorageType === "session" ? store.session.has(key) : store.local.has(key);
+
+        if (!hasLocalStorage) {
+            this.writeTableState(emptyState);
+            return emptyState;
+        }
+
+        const localStoredState = (stateLocalStorageType === "session"
+            ? store.session.get(key)
+            : store.local.get(key)) as TableState | null;
+        this.debug("getTableState", localStoredState);
+        if (
+            localStoredState &&
+            localStoredState.lastUpdate &&
+            currentDateTime - localStoredState.lastUpdate < this.props.stateLocalStorageTime * 1000 * 60
+        ) {
+            // if (
+            //     localStoredState.selected &&
+            //     localStoredState.selected.length > 0 &&
+            //     stateExecuteSelectActionOnRestore
+            // ) {
+            //     this.onSelectAction(localStoredState.selected);
+            // }
+            return localStoredState;
+        }
+
+        this.writeTableState(emptyState);
+        return emptyState;
+    }
+
+    private _writeTableState(state: TableState): void {
+        // We're doing this the dirty way instead of Object.assign because IE11 sucks
+        const writeState = JSON.parse(JSON.stringify(state)) as TableState;
+        const {
+            stateManagementType,
+            stateLocalStorageKey,
+            stateLocalStorageKeyIncludeGUID,
+            stateLocalStorageType
+        } = this.props;
+        if (stateManagementType === "disabled" /* || stateManagementType === "mendix"*/) {
+            return;
+        }
+        this.debug("writeTableState", writeState);
+        const key =
+            stateLocalStorageKey !== ""
+                ? `TreeViewState-${stateLocalStorageKey}${
+                      stateLocalStorageKeyIncludeGUID ? `-${writeState.context}` : ""
+                  }`
+                : `TreeViewState-${writeState.context}`;
+        writeState.lastUpdate = +new Date();
+        if (stateLocalStorageType === "session") {
+            store.session.set(key, writeState);
+        } else {
+            store.local.set(key, writeState);
+        }
+    }
+
+    // **********************
+    // SEARCH
+    // **********************
+
+    private _onLoadSelectionHandler(obj: mendix.lib.MxObject): void {
+        const {
+            stateManagementType,
+            eventNodeOnClickAction,
+            eventNodeClickFormat,
+            stateExecuteSelectActionOnRestore
+        } = this.props;
+
+        if (
+            obj &&
+            stateManagementType !== "disabled" &&
+            stateExecuteSelectActionOnRestore &&
+            (eventNodeOnClickAction === "microflow" || eventNodeOnClickAction === "nanoflow")
+        ) {
+            this.clickTypeHandler(obj, eventNodeClickFormat);
+        }
+    }
+
     private async _search(query: string): Promise<mendix.lib.MxObject[] | null> {
         const { searchNanoflow } = this.props;
 
@@ -403,4 +515,4 @@ class TreeView extends Component<TreeViewContainerProps> {
     }
 }
 
-export default hot(TreeView);
+export default TreeView;
