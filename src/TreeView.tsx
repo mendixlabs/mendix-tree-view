@@ -1,4 +1,4 @@
-import { Component, ReactNode, createElement, ReactElement } from "react";
+import { Component, ReactNode, createElement, ReactElement, createRef } from "react";
 import { findDOMNode } from "react-dom";
 
 import { TreeViewComponent } from "./components/TreeViewComponent";
@@ -17,12 +17,14 @@ import {
     IAction,
     getObjectContextFromObjects,
     executeMicroflow,
-    executeNanoFlow,
+    executeNanoflow,
     openPage,
     fetchByXpath,
     getObjects,
     createObject,
-    deleteObject
+    deleteObject,
+    debug,
+    ActionReturnType
 } from "@jeltemx/mendix-react-widget-utils";
 import { splitRef } from "./utils/index";
 import { EntryObjectExtraOptions, EntryObject } from "./store/objects/entry";
@@ -34,6 +36,8 @@ export interface Action extends IAction {}
 export type ActionReturn = string | number | boolean | mendix.lib.MxObject | mendix.lib.MxObject[] | void;
 
 class TreeView extends Component<TreeViewContainerProps> {
+    ref = createRef<HTMLDivElement>();
+
     private store: NodeStore;
     private widgetId?: string;
     private searchEnabled: boolean;
@@ -95,20 +99,28 @@ class TreeView extends Component<TreeViewContainerProps> {
         this.store = new NodeStore(storeOpts);
     }
 
-    componentDidUpdate(): void {
-        if (this.widgetId) {
-            const domNode = findDOMNode(this);
-            // @ts-ignore
-            domNode.setAttribute("widgetId", this.widgetId);
-        }
-    }
+    // componentDidUpdate(): void {
+    //     if (this.widgetId) {
+    //         const domNode = findDOMNode(this);
+    //         // @ts-ignore
+    //         domNode.setAttribute("widgetId", this.widgetId);
+    //     }
+    // }
 
     componentWillReceiveProps(nextProps: TreeViewContainerProps): void {
-        if (!this.widgetId) {
-            const domNode = findDOMNode(this);
-            // @ts-ignore
-            this.widgetId = domNode.getAttribute("widgetId") || undefined;
+        if (!this.widgetId && this.ref.current) {
+            try {
+                const domNode = findDOMNode(this);
+                // @ts-ignore
+                this.widgetId = domNode.getAttribute("widgetId") || undefined;
+            } catch (error) {
+                const domNode = findDOMNode(this.ref.current);
+                // @ts-ignore
+                const alternativeID = domNode.getAttribute("data-mendix-id") || undefined;
+                this.widgetId = alternativeID;
+            }
         }
+
         this.store.setContext(nextProps.mxObject);
         if (nextProps.mxObject) {
             this.store.setLoading(true);
@@ -126,18 +138,20 @@ class TreeView extends Component<TreeViewContainerProps> {
         } = this.props;
         const showIcon = uiNodeIconAttr !== "";
         return (
-            <TreeViewComponent
-                className={this.props.class}
-                searchEnabled={this.searchEnabled}
-                holdSelection={selectionSelectOnClick}
-                showLine={uiTableShowLines}
-                store={this.store}
-                showIcon={showIcon}
-                iconIsGlyphicon={uiNodeIconIsGlyphicon}
-                draggable={dragIsDraggable}
-                onClickHandler={this.clickTypeHandler}
-                switcherBg={this.props.uiSwitcherBg}
-            />
+            <div ref={this.ref}>
+                <TreeViewComponent
+                    className={this.props.class}
+                    searchEnabled={this.searchEnabled}
+                    holdSelection={selectionSelectOnClick}
+                    showLine={uiTableShowLines}
+                    store={this.store}
+                    showIcon={showIcon}
+                    iconIsGlyphicon={uiNodeIconIsGlyphicon}
+                    draggable={dragIsDraggable}
+                    onClickHandler={this.clickTypeHandler}
+                    switcherBg={this.props.uiSwitcherBg}
+                />
+            </div>
         );
     }
 
@@ -365,7 +379,7 @@ class TreeView extends Component<TreeViewContainerProps> {
         return helperObject;
     }
 
-    private _executeAction(action: Action, showError = false, obj?: mendix.lib.MxObject): Promise<ActionReturn> {
+    private _executeAction(action: Action, showError = false, obj?: mendix.lib.MxObject): Promise<ActionReturnType> {
         this.debug("executeAction", action, obj && obj.getGuid());
         const { mxform } = this.props;
         const context = getObjectContextFromObjects(obj, this.props.mxObject);
@@ -373,7 +387,7 @@ class TreeView extends Component<TreeViewContainerProps> {
         if (action.microflow) {
             return executeMicroflow(action.microflow, context, mxform, showError);
         } else if (action.nanoflow) {
-            return executeNanoFlow(action.nanoflow, context, mxform, showError);
+            return executeNanoflow(action.nanoflow, context, mxform, showError);
         } else if (action.page) {
             return openPage(action.page, context, showError);
         }
@@ -384,10 +398,8 @@ class TreeView extends Component<TreeViewContainerProps> {
     }
 
     private _debug(...args: unknown[]): void {
-        const id = this.props.friendlyId || this.widgetId;
-        if (window.logger) {
-            window.logger.debug(`${id}:`, ...args);
-        }
+        const id = this.props.friendlyId || this.widgetId || "mendix.treeview.TreeView";
+        debug(id, ...args);
     }
 }
 
