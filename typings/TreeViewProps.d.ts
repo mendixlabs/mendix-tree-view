@@ -78,6 +78,8 @@ export interface TreeViewContainerProps extends CommonProps {
     stateLocalStorageKey: string;
     stateLocalStorageKeyIncludeGUID: boolean;
     stateExecuteSelectActionOnRestore: boolean;
+
+    experimentalExposeSetSelected: boolean;
 }
 
 export interface TreeViewPreviewProps {

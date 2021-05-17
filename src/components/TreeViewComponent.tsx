@@ -111,10 +111,15 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
             return <Empty />;
         }
 
+        const expanded = [...expandedKeys];
+        const treeData = [...this.getTreeNodes(store.entryTree)];
+
+        console.log(expanded, treeData);
+
         return (
             <Tree
                 className={treeClass}
-                expandedKeys={expandedKeys}
+                expandedKeys={expanded}
                 showIcon={showIcon}
                 showLine={showLine}
                 switcherIcon={showLine ? <CaretDownFilled style={{ backgroundColor: "#F5F8FD" }} /> : undefined}
@@ -124,7 +129,7 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
                 onExpand={this.onExpand.bind(this)}
                 onClick={this.handleClick("single")}
                 onDoubleClick={this.handleClick("double")}
-                treeData={this.getTreeNodes(store.entryTree)}
+                treeData={treeData}
             />
         );
     }
@@ -138,6 +143,7 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
                 item.className,
                 item.highlight ? "highlight" : "",
                 item.selected && this.props.holdSelection ? "selected" : "",
+                item.expanded ? "treenode-expanded" : "",
                 item.icon ? "has-icon" : ""
             );
 

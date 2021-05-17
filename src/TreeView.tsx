@@ -128,10 +128,25 @@ class TreeView extends Component<TreeViewContainerProps> {
             }
         }
 
+        if (nextProps.experimentalExposeSetSelected && this.store.contextObject) {
+            const guid = this.store.contextObject.getGuid();
+            // @ts-ignore
+            if (typeof window[`__TreeView_${guid}_select`] !== "undefined") {
+                // @ts-ignore
+                delete window[`__TreeView_${guid}_select`];
+            }
+        }
+
         this.store.setContext(nextProps.mxObject);
         if (nextProps.mxObject) {
             this.store.setLoading(true);
             this.fetchData(nextProps.mxObject);
+        }
+
+        if (nextProps.experimentalExposeSetSelected && nextProps.mxObject) {
+            const guid = nextProps.mxObject.getGuid();
+            // @ts-ignore
+            window[`__TreeView_${guid}_select`] = this.store.setSelectedFromExternal.bind(this.store);
         }
     }
 

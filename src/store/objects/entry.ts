@@ -284,9 +284,11 @@ export class EntryObject {
     }
 
     @action
-    setExpanded(expanded = false): void {
+    setExpanded(expanded = false, onChange = true): void {
         this._isExpanded = expanded;
-        this.onExpandChange();
+        if (onChange) {
+            this.onExpandChange();
+        }
     }
 
     @action

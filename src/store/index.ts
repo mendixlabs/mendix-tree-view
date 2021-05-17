@@ -59,6 +59,8 @@ export class NodeStore {
     public childLoader: (parent: EntryObject, expandAfter?: string | null) => Promise<void> = async () => {};
     public searchHandler: ((_query: string) => Promise<mendix.lib.MxObject[] | null>) | null;
     public debug: (...args: unknown[]) => void;
+    public findParents = this._findParents.bind(this);
+    public setSelectedFromExternal = this._setSelectedFromExternal.bind(this);
 
     @observable public isLoading: boolean;
     @observable public contextObject: mendix.lib.MxObject | null;
@@ -316,7 +318,7 @@ export class NodeStore {
     }
 
     @action
-    selectEntry(guid: string): void {
+    selectEntry(guid: string, expandChange = true): void {
         if (!this.holdSelection) {
             return;
         }
@@ -334,7 +336,22 @@ export class NodeStore {
                 entry.setSelected(true);
             }
         }
-        this.onExpandChange();
+        if (expandChange) {
+            this.onExpandChange();
+        }
+    }
+
+    private _setSelectedFromExternal(guid: string): void {
+        if (!this.holdSelection) {
+            return;
+        }
+        const found = this.entries.find(e => e.guid === guid);
+        if (found) {
+            const parents = this.findParents(found).reverse();
+            this.collapseAll();
+            parents.forEach(p => this.expandKey(p.guid, true));
+            this.selectEntry(found.guid);
+        }
     }
 
     // Expanded
@@ -475,6 +492,21 @@ export class NodeStore {
         }
         const found = this.entries.find(e => e.guid === guid);
         return found || null;
+    }
+
+    private _findParents(entry: EntryObject): EntryObject[] {
+        let tree = entry;
+        const returnArray: EntryObject[] = [];
+        while (tree._parent) {
+            const parent = this.findEntry(tree._parent);
+            if (parent) {
+                returnArray.push(parent);
+                tree = parent;
+            } else {
+                break;
+            }
+        }
+        return returnArray;
     }
 
     private entryHandler(
