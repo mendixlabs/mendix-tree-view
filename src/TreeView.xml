@@ -202,8 +202,8 @@ Note:
             </propertyGroup>
         </propertyGroup>
 
-        <propertyGroup caption="EXPERIMENTAL - Search">
-            <propertyGroup caption="Feature">
+        <propertyGroup caption="Search">
+            <propertyGroup caption="Experimental Feature">
                 <property key="searchEnabled" type="boolean" defaultValue="false">
                     <caption>Enable</caption>
                     <description>Note: Search will only work when Load is set to 'Whole tree'. It cannot be enabled for partial trees. Also, this feature is still considered experimental in this version of the widget. We might remove it in the future or change the setup.</description>
@@ -287,6 +287,63 @@ Note:
                     <description>When clicking a Node, you might want to indicate that this is the selected Node. The widget will add a .selected class to the selected node.</description>
                 </property>
             </propertyGroup>
+        </propertyGroup>
+
+        <!-- ****************
+            MISC
+        *********************-->
+
+        <propertyGroup caption="Misc">
+            <propertyGroup caption="State Management">
+                <property key="stateManagementType" type="enumeration" defaultValue="disabled">
+                    <caption>State Type</caption>
+                    <description>
+Note: State management (currently) ONLY works when you load a whole tree (see Data section). In case of 'Top level', it will be disabled.
+                    </description>
+                    <enumerationValues>
+                         <enumerationValue key="disabled">Disabled</enumerationValue>
+                         <enumerationValue key="localStorage">Browser</enumerationValue>
+                         <!-- <enumerationValue key="mendix">Mendix (server) NOT WORKING YET!!</enumerationValue> -->
+                    </enumerationValues>
+                </property>
+            </propertyGroup>
+            <propertyGroup caption="Browser">
+                <property key="stateLocalStorageType" type="enumeration" defaultValue="session">
+                    <caption>Storage type</caption>
+                    <description>If you use session (default), it will only apply to current session. If you use local storage, it will stay in the browser as local storage, persisting over multiple sessions. This does mean the local storage can get polluted with a lot of states.</description>
+                    <enumerationValues>
+                         <enumerationValue key="session">Session</enumerationValue>
+                         <enumerationValue key="local">Local Storage</enumerationValue>
+                    </enumerationValues>
+                </property>
+                <property key="stateLocalStorageTime" type="integer" required="true" defaultValue="60">
+                    <caption>Timeout</caption>
+                    <description>Storage Timeout for State Management is set in MINUTES. When the state is older, it will be ignored</description>
+                </property>
+                <property key="stateLocalStorageKey" type="string" required="false" defaultValue="">
+                    <caption>Key</caption>
+                    <description>When storing the state in local storage, it will choose a specific key, based on the the GUID of your context. If you happen to use a non-persistent context, this will change every time. In that case you can set a key here (make it unique for your current view). Otherwise, leave it empty.</description>
+                </property>
+                <property key="stateLocalStorageKeyIncludeGUID" type="boolean" defaultValue="false">
+                    <caption>Include guid</caption>
+                    <description>When you set a key you can still add the GUID if needed. This is not useful when using non-persistent objects</description>
+                </property>
+                <property key="stateExecuteSelectActionOnRestore" type="boolean" defaultValue="false">
+                    <caption>Restore latest click action</caption>
+                    <description>When you restore your state, and you have an On Click action defined in Events, you can automatically execute this on the last selected item you clicked. This is only done for Microflow/Nanoflow, not the Open Page action.</description>
+                </property>
+            </propertyGroup>
+            <!-- <propertyGroup caption="Experimental">
+                <property key="experimentalExposeSetSelected" type="boolean" defaultValue="false">
+                    <caption>Expose setSelected</caption>
+                    <description>This is an EXPERIMENTAL feature. It will expose the function to select a certain object/list of objects in the Tree Table, so you can target it with a Nanoflow + Javascript Action.
+
+Notes:
+- This is EXPERIMENTAL. Please debug in the console when having problems. No guarantees that this feature will stay in the widget.
+- This only works properly when the whole tree is loaded, or at least all parents + selected node. It will try to expand the parents if possible.
+- The name of the function will depend on the context. This is done to make sure the function is unique. The name of the function is "window.__TreeTable_{guid}_select", where "{guid}" is the ID of the context object. When executing this in a Javascript action, please verify that the function exists.</description>
+                </property>
+            </propertyGroup> -->
         </propertyGroup>
     </properties>
 </widget>

@@ -16,14 +16,24 @@ export interface TreeGuids {
 export interface NodeStoreConstructorOptions {
     contextObject?: mendix.lib.MxObject;
     loadFull: boolean;
+    stateFull: boolean;
     holdSelection?: boolean;
     subscriptionHandler?: (guids: TreeGuids) => void;
-    onSelectionChange?: (guids: TreeGuids) => void;
+    onLoadSelectionHandler?: (obj: mendix.lib.MxObject) => void;
     validationMessages: ValidationMessage[];
     entryObjectAttributes: EntryObjectAttributes;
     childLoader: (parent: EntryObject, expandAfter: string | null) => Promise<void>;
     searchHandler?: (_query: string) => Promise<mendix.lib.MxObject[] | null>;
+    getInitialTableState: (guid: string) => TableState;
+    writeTableState: (state: TableState) => void;
     debug: (...args: unknown[]) => void;
+}
+
+export interface TableState {
+    context: string | null;
+    lastUpdate?: number;
+    expanded: string[];
+    selected: string[];
 }
 
 export interface EntryObjectAttributes {
@@ -44,7 +54,7 @@ const arrayToTreeOpts = {
 export class NodeStore {
     // Properties
     public subscriptionHandler: (guids: TreeGuids) => void;
-    public onSelectionChangeHandler: (guids: TreeGuids) => void;
+    public onLoadSelectionHandler: (obj: mendix.lib.MxObject) => void;
     public entryObjectAttributes: EntryObjectAttributes;
     public childLoader: (parent: EntryObject, expandAfter?: string | null) => Promise<void> = async () => {};
     public searchHandler: ((_query: string) => Promise<mendix.lib.MxObject[] | null>) | null;
@@ -59,33 +69,46 @@ export class NodeStore {
     @observable public width = 0;
     @observable public height = 0;
 
+    @observable public resetState = false;
+
     @observable public validationMessages: ValidationMessage[] = [];
 
     private loadFull = false;
+    private stateFull = false;
     private holdSelection = false;
     private expandedMapping: { [key: string]: string[] } = {};
+    private onExpandChange = this._onExpandChange.bind(this);
+
+    private getInitialTableState: (guid: string) => TableState;
+    private writeTableState: (state: TableState) => void;
 
     constructor(opts: NodeStoreConstructorOptions) {
         const {
             contextObject,
+            stateFull,
             loadFull,
             holdSelection,
             subscriptionHandler,
-            onSelectionChange,
+            onLoadSelectionHandler,
             validationMessages,
             entryObjectAttributes,
             searchHandler,
             childLoader,
+            getInitialTableState,
+            writeTableState,
             debug
         } = opts;
 
         this.isLoading = false;
+        this.stateFull = stateFull;
         this.loadFull = typeof loadFull !== "undefined" ? loadFull : false;
         this.holdSelection = typeof holdSelection !== "undefined" ? holdSelection : false;
         this.contextObject = contextObject || null;
         this.subscriptionHandler = subscriptionHandler || ((): void => {});
-        this.onSelectionChangeHandler = onSelectionChange || ((): void => {});
+        this.onLoadSelectionHandler = onLoadSelectionHandler || ((): void => {});
         this.searchHandler = searchHandler || null;
+        this.getInitialTableState = getInitialTableState;
+        this.writeTableState = writeTableState;
         this.debug = debug || ((): void => {});
         this.entryObjectAttributes = entryObjectAttributes || {
             childRef: null,
@@ -138,13 +161,39 @@ export class NodeStore {
             this.filter = [];
             this.searchQuery = "";
 
-            if (this.loadFull && this.contextObject && this.expandedMapping[this.contextObject.getGuid()]) {
-                const mapping = this.expandedMapping[this.contextObject.getGuid()];
-                this.entries.forEach(entry => {
-                    if (entry.guid && mapping.find(m => m === entry.guid)) {
-                        entry.setExpanded(true);
-                    }
-                });
+            if (this.loadFull && this.contextObject) {
+                if (!this.stateFull && this.expandedMapping[this.contextObject.getGuid()]) {
+                    const mapping = this.expandedMapping[this.contextObject.getGuid()];
+                    this.writeTableState({
+                        context: this.contextObject.getGuid(),
+                        expanded: mapping,
+                        selected: []
+                    });
+                    this.entries.forEach(entry => {
+                        if (entry.guid && mapping.find(m => m === entry.guid)) {
+                            entry.setExpanded(true);
+                        }
+                    });
+                } else if (this.stateFull) {
+                    const initialTablesState = this.getInitialTableState(this.contextObject.getGuid());
+                    const initialState: TableState = {
+                        context: initialTablesState.context,
+                        selected: initialTablesState.selected.filter(s => !!entries.find(e => e.guid === s)),
+                        expanded: initialTablesState.expanded.filter(s => !!entries.find(e => e.guid === s))
+                    };
+                    // We're doing this one by one, because expand will overwrite selected in state
+                    this.entries.forEach(entry => {
+                        if (entry.guid && initialState.selected.indexOf(entry.guid) !== -1) {
+                            entry.setSelected(true);
+                            this.onLoadSelectionHandler(entry._obj);
+                        }
+                    });
+                    this.entries.forEach(entry => {
+                        if (entry.guid && initialState.expanded.indexOf(entry.guid) !== -1) {
+                            entry.setExpanded(true);
+                        }
+                    });
+                }
             }
         } else {
             const cloned = [...this.entries];
@@ -211,8 +260,21 @@ export class NodeStore {
     setContext(obj?: mendix.lib.MxObject): void {
         this.debug("Store: setContext", obj);
 
+        if (
+            this.contextObject === null ||
+            !obj ||
+            (this.contextObject && obj && this.contextObject.getGuid() !== obj.getGuid())
+        ) {
+            this.resetState = true;
+        }
+
         if (this.contextObject && this.searchQuery === "") {
             this.expandedMapping[this.contextObject.getGuid()] = this.expandedKeys;
+            this.writeTableState({
+                context: this.contextObject.getGuid(),
+                expanded: this.expandedKeys,
+                selected: this.selectedEntriesIds
+            });
         }
 
         this.contextObject = obj || null;
@@ -272,6 +334,7 @@ export class NodeStore {
                 entry.setSelected(true);
             }
         }
+        this.onExpandChange();
     }
 
     // Expanded
@@ -398,6 +461,7 @@ export class NodeStore {
         const entryObjectOptions: EntryObjectOptions = {
             mxObject,
             changeHandler,
+            onExpandChange: this.onExpandChange,
             extraOpts: opts
         };
 
@@ -444,5 +508,16 @@ export class NodeStore {
             }
         }
         return returnArray;
+    }
+
+    private _onExpandChange(): void {
+        this.debug("store: onExpandChange", this.expandedKeys);
+        if (this.contextObject) {
+            this.writeTableState({
+                context: this.contextObject.getGuid(),
+                selected: this.selectedEntriesIds,
+                expanded: this.expandedKeys
+            });
+        }
     }
 }

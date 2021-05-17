@@ -33,6 +33,7 @@ export interface EntryObjectExtraOptions {
 export interface EntryObjectOptions {
     mxObject: mendix.lib.MxObject;
     changeHandler?: (guid?: string, removedCb?: (removed: boolean) => void) => void | Promise<void>;
+    onExpandChange?: () => void;
     extraOpts: EntryObjectExtraOptions;
 }
 
@@ -45,6 +46,7 @@ export class EntryObject {
     public _attributes: EntryObjectAttributes;
     public _dynamicTitleMethod: DynamicTitleMethod;
     public _staticTitleMethod: StaticTitleMethod;
+    public onExpandChange: () => void;
 
     @observable _title: string;
     @observable _icon: string | null;
@@ -65,7 +67,7 @@ export class EntryObject {
     });
 
     constructor(opts: EntryObjectOptions, attributes: EntryObjectAttributes) {
-        const { mxObject, changeHandler, extraOpts } = opts;
+        const { mxObject, changeHandler, extraOpts, onExpandChange } = opts;
         const { staticTitleMethod, dynamicTitleMethod, isRoot, parent, isLoaded } = extraOpts;
         this._obj = mxObject;
 
@@ -82,6 +84,7 @@ export class EntryObject {
         this._dynamicTitleMethod = dynamicTitleMethod || null;
         this._staticTitleMethod = staticTitleMethod || null;
         this._changeHandler = changeHandler || ((): void => {});
+        this.onExpandChange = onExpandChange || ((): void => {});
         this._subscriptions = [];
         this._attributes = attributes;
 
@@ -283,6 +286,7 @@ export class EntryObject {
     @action
     setExpanded(expanded = false): void {
         this._isExpanded = expanded;
+        this.onExpandChange();
     }
 
     @action

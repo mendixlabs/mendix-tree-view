@@ -22,6 +22,9 @@ export type TitleDataSourceType = "attribute" | "nanoflow";
 export type ClickType = "single" | "double";
 export type FullAction = "nothing" | "microflow" | "nanoflow" | "open";
 
+export type StateManagementType = "disabled" | "localStorage" /*| "mendix"*/;
+export type StateManagementStorage = "session" | "local";
+
 export interface TreeViewContainerProps extends CommonProps {
     nodeEntity: string;
     nodeLoadScenario: LoadScenario;
@@ -68,6 +71,13 @@ export interface TreeViewContainerProps extends CommonProps {
     searchStringAttribute: string;
     searchNodeReference: string;
     searchNanoflow: Nanoflow;
+
+    stateManagementType: StateManagementType;
+    stateLocalStorageTime: number;
+    stateLocalStorageType: StateManagementStorage;
+    stateLocalStorageKey: string;
+    stateLocalStorageKeyIncludeGUID: boolean;
+    stateExecuteSelectActionOnRestore: boolean;
 }
 
 export interface TreeViewPreviewProps {
