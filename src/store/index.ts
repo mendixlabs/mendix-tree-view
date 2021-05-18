@@ -59,8 +59,6 @@ export class NodeStore {
     public childLoader: (parent: EntryObject, expandAfter?: string | null) => Promise<void> = async () => {};
     public searchHandler: ((_query: string) => Promise<mendix.lib.MxObject[] | null>) | null;
     public debug: (...args: unknown[]) => void;
-    public findParents = this._findParents.bind(this);
-    public setSelectedFromExternal = this._setSelectedFromExternal.bind(this);
 
     @observable public isLoading: boolean;
     @observable public contextObject: mendix.lib.MxObject | null;
@@ -341,33 +339,36 @@ export class NodeStore {
         }
     }
 
-    private _setSelectedFromExternal(guid: string): void {
+    @action
+    setSelectedFromExternal(guid: string): void {
         if (!this.holdSelection) {
             return;
         }
         const found = this.entries.find(e => e.guid === guid);
+        this.debug("setSelectedFromExternal", guid, found);
         if (found) {
-            const parents = this.findParents(found).reverse();
-            this.collapseAll();
-            parents.forEach(p => this.expandKey(p.guid, true));
+            const obj = found.obj;
+            const parentIds = this.getParents(obj).map(obj => obj.guid);
+            const toCollapse = this.expandedKeys.filter(expanded => !parentIds.find(p => p === expanded));
+            toCollapse.forEach(id => this.expandKey(id, false, false));
+            parentIds.forEach(p => this.expandKey(p, true, false));
             this.selectEntry(found.guid);
         }
     }
 
     // Expanded
-
     get expandedKeys(): string[] {
         return this.entries.filter(e => e.isExpanded).map(e => e.guid);
     }
 
     @action
-    expandKey(guid: string, expanded: boolean): void {
+    expandKey(guid: string, expanded: boolean, onChange = true): void {
         const entryObject = this.findEntry(guid);
         if (entryObject) {
             if (expanded && !entryObject.isLoaded) {
                 this.childLoader(entryObject, guid);
             } else {
-                entryObject.setExpanded(expanded);
+                entryObject.setExpanded(expanded, onChange);
             }
         }
     }
@@ -414,29 +415,47 @@ export class NodeStore {
     }
 
     // Entries
+
+    @computed
+    get treeMapping(): { [key:string]: string } {
+        const needParentMapping = this.entryObjectAttributes.relationType === "nodeChildren";
+        const treeMapping: { [key: string]: string } = {};
+
+        if (needParentMapping) {
+            this.entries.forEach(entry => {
+                const obj = entry.obj;
+                if (obj.children) {
+                    obj.children.forEach(child => {
+                        treeMapping[child] = obj.guid;
+                    })
+                }
+            })
+        } else {
+            this.entries.forEach(entry => {
+                const obj = entry.obj;
+                if (obj.parent) {
+                    treeMapping[obj.guid] = obj.parent
+                }
+            })
+        }
+
+        return treeMapping;
+    }
+
+
     @computed
     get entryList(): TreeObject[] {
         const needParentMapping = this.entryObjectAttributes.relationType === "nodeChildren";
-        const treeMapping: { [key: string]: string } = {};
+        const treeMapping = this.treeMapping;
+
         let entries: TreeObject[] = [...this.entries].map(entry => {
             const obj = entry.obj;
             obj.highlight = false;
-            if (needParentMapping && obj.children) {
-                obj.children.forEach(child => {
-                    treeMapping[child] = obj.guid;
-                });
+            if (needParentMapping && treeMapping[obj.guid]) {
+                obj.parent = treeMapping[obj.guid];
             }
             return obj;
         });
-
-        if (this.entryObjectAttributes.relationType === "nodeChildren") {
-            entries = entries.map(entryObj => {
-                if (treeMapping[entryObj.guid]) {
-                    entryObj.parent = treeMapping[entryObj.guid];
-                }
-                return entryObj;
-            });
-        }
 
         if (this.searchQuery !== "") {
             const rawEntries = [...entries]
@@ -494,21 +513,6 @@ export class NodeStore {
         return found || null;
     }
 
-    private _findParents(entry: EntryObject): EntryObject[] {
-        let tree = entry;
-        const returnArray: EntryObject[] = [];
-        while (tree._parent) {
-            const parent = this.findEntry(tree._parent);
-            if (parent) {
-                returnArray.push(parent);
-                tree = parent;
-            } else {
-                break;
-            }
-        }
-        return returnArray;
-    }
-
     private entryHandler(
         opts: EntryObjectExtraOptions
     ): (guid: string, removedCB: (removed: boolean) => void) => Promise<void> {
@@ -528,13 +532,13 @@ export class NodeStore {
     }
 
     private getParents(treeObject: TreeObject): TreeObject[] {
-        let tree = treeObject;
+        let parentGuid = this.treeMapping[treeObject.guid];
         const returnArray: TreeObject[] = [];
-        while (tree.parent) {
-            const parent = this.findEntry(tree.parent);
+        while (parentGuid) {
+            const parent = this.findEntry(parentGuid);
             if (parent) {
                 returnArray.push(parent.obj);
-                tree = parent.obj;
+                parentGuid = this.treeMapping[parent.guid];
             } else {
                 break;
             }
@@ -543,7 +547,7 @@ export class NodeStore {
     }
 
     private _onExpandChange(): void {
-        this.debug("store: onExpandChange", this.expandedKeys);
+        // this.debug("store: onExpandChange", this.expandedKeys);
         if (this.contextObject) {
             this.writeTableState({
                 context: this.contextObject.getGuid(),

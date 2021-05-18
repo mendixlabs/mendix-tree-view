@@ -333,7 +333,7 @@ Note: State management (currently) ONLY works when you load a whole tree (see Da
                     <description>When you restore your state, and you have an On Click action defined in Events, you can automatically execute this on the last selected item you clicked. This is only done for Microflow/Nanoflow, not the Open Page action.</description>
                 </property>
             </propertyGroup>
-            <!-- <propertyGroup caption="Experimental">
+            <propertyGroup caption="Experimental">
                 <property key="experimentalExposeSetSelected" type="boolean" defaultValue="false">
                     <caption>Expose setSelected</caption>
                     <description>This is an EXPERIMENTAL feature. It will expose the function to select a certain object/list of objects in the Tree View, so you can target it with a Nanoflow + Javascript Action.
@@ -343,7 +343,7 @@ Notes:
 - This only works properly when the whole tree is loaded, or at least all parents + selected node. It will try to expand the parents if possible.
 - The name of the function will depend on the context. This is done to make sure the function is unique. The name of the function is "window.__TreeView_{guid}_select", where "{guid}" is the ID of the context object. When executing this in a Javascript action, please verify that the function exists.</description>
                 </property>
-            </propertyGroup> -->
+            </propertyGroup>
         </propertyGroup>
     </properties>
 </widget>

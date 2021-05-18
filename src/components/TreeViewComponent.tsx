@@ -114,8 +114,6 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
         const expanded = [...expandedKeys];
         const treeData = [...this.getTreeNodes(store.entryTree)];
 
-        console.log(expanded, treeData);
-
         return (
             <Tree
                 className={treeClass}

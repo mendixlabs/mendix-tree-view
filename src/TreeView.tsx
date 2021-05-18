@@ -106,14 +106,6 @@ class TreeView extends Component<TreeViewContainerProps> {
         this.store = new NodeStore(storeOpts);
     }
 
-    // componentDidUpdate(): void {
-    //     if (this.widgetId) {
-    //         const domNode = findDOMNode(this);
-    //         // @ts-ignore
-    //         domNode.setAttribute("widgetId", this.widgetId);
-    //     }
-    // }
-
     componentWillReceiveProps(nextProps: TreeViewContainerProps): void {
         if (!this.widgetId && this.ref.current) {
             try {
@@ -129,15 +121,11 @@ class TreeView extends Component<TreeViewContainerProps> {
         }
 
         if (nextProps.experimentalExposeSetSelected && this.store.contextObject) {
-            const guid = this.store.contextObject.getGuid();
-            // @ts-ignore
-            if (typeof window[`__TreeView_${guid}_select`] !== "undefined") {
-                // @ts-ignore
-                delete window[`__TreeView_${guid}_select`];
-            }
+            this.deleteExposedMethod();
         }
 
         this.store.setContext(nextProps.mxObject);
+
         if (nextProps.mxObject) {
             this.store.setLoading(true);
             this.fetchData(nextProps.mxObject);
@@ -145,9 +133,15 @@ class TreeView extends Component<TreeViewContainerProps> {
 
         if (nextProps.experimentalExposeSetSelected && nextProps.mxObject) {
             const guid = nextProps.mxObject.getGuid();
+            const methodName = `__TreeView_${guid}_select`;
             // @ts-ignore
-            window[`__TreeView_${guid}_select`] = this.store.setSelectedFromExternal.bind(this.store);
+            window[methodName] = this.store.setSelectedFromExternal.bind(this.store);
+            this.debug(`Expose external select method: window.${methodName}`);
         }
+    }
+
+    componentWillUnmount(): void {
+        this.deleteExposedMethod();
     }
 
     render(): ReactNode {
@@ -175,6 +169,17 @@ class TreeView extends Component<TreeViewContainerProps> {
                 />
             </div>
         );
+    }
+
+    private deleteExposedMethod(): void {
+        const guid = this.store.contextObject?.getGuid();
+        const methodName = `__TreeView_${guid}_select`;
+        // @ts-ignore
+        if (guid && typeof window[methodName] !== "undefined") {
+            // @ts-ignore
+            delete window[methodName];
+            this.debug(`Remove external select method: window.${methodName}`);
+        }
     }
 
     private async _fetchData(object: mendix.lib.MxObject): Promise<void> {
@@ -397,13 +402,6 @@ class TreeView extends Component<TreeViewContainerProps> {
             localStoredState.lastUpdate &&
             currentDateTime - localStoredState.lastUpdate < this.props.stateLocalStorageTime * 1000 * 60
         ) {
-            // if (
-            //     localStoredState.selected &&
-            //     localStoredState.selected.length > 0 &&
-            //     stateExecuteSelectActionOnRestore
-            // ) {
-            //     this.onSelectAction(localStoredState.selected);
-            // }
             return localStoredState;
         }
 
