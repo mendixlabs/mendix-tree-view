@@ -417,7 +417,7 @@ export class NodeStore {
     // Entries
 
     @computed
-    get treeMapping(): { [key:string]: string } {
+    get treeMapping(): { [key: string]: string } {
         const needParentMapping = this.entryObjectAttributes.relationType === "nodeChildren";
         const treeMapping: { [key: string]: string } = {};
 
@@ -427,21 +427,20 @@ export class NodeStore {
                 if (obj.children) {
                     obj.children.forEach(child => {
                         treeMapping[child] = obj.guid;
-                    })
+                    });
                 }
-            })
+            });
         } else {
             this.entries.forEach(entry => {
                 const obj = entry.obj;
                 if (obj.parent) {
-                    treeMapping[obj.guid] = obj.parent
+                    treeMapping[obj.guid] = obj.parent;
                 }
-            })
+            });
         }
 
         return treeMapping;
     }
-
 
     @computed
     get entryList(): TreeObject[] {

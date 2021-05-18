@@ -1,8 +1,4 @@
 [![Apache License](https://img.shields.io/badge/license-Apache%202.0-orange.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Build Status](https://travis-ci.org/JelteMX/mendix-tree-view.svg?branch=master)](https://travis-ci.org/JelteMX/mendix-tree-view)
-[![Coverage Status](https://coveralls.io/repos/github/JelteMX/mendix-tree-view/badge.svg?branch=master)](https://coveralls.io/github/JelteMX/mendix-tree-view?branch=master)
-[![Dependencies](https://david-dm.org/JelteMX/mendix-tree-view.svg)]([https://david-dm.org/JelteMX/mendix-tree-view](https://david-dm.org/JelteMX/mendix-tree-view))
-[![DevDependencies](https://david-dm.org/JelteMX/mendix-tree-view/dev-status.svg)]([https://david-dm.org/JelteMX/mendix-tree-view?type=dev](https://david-dm.org/JelteMX/mendix-tree-view?type=dev))
 [![Support](https://img.shields.io/badge/Support-Community%20(no%20active%20support)-orange.svg)](https://docs.mendix.com/developerportal/app-store/app-store-content-support)
 ![WM](https://img.shields.io/badge/Webmodeler%20compatible-NO-red.svg)
 [![Studio](https://img.shields.io/badge/Studio%20version-8.0%2B-blue.svg)](https://appstore.home.mendix.com/link/modeler/)
@@ -33,6 +29,8 @@ Show a Tree structure in your Mendix project
 - Load children over reference, xpath or nanoflow
 - On Click events
 - Drag &amp; Drop (Node-Parent)
+- State management (keep treestructure expansion in browser storage)
+-
 - **Experimental** Client side search (Only on loading a complete tree)
 
 > This widget is about 300Kb uncompressed, so in your cloud deployment this widget should take about 83 Kb of network resources
@@ -75,7 +73,7 @@ Tested:
 - Drag &amp; Drop is only enabled for objects with a parent relation
 - The widget will do the changes on the object by itself
 
-### 6. Experimental - Search
+### 6. Search (experimental)
 
 ![settings](/assets/settings6.png)
 
@@ -83,7 +81,11 @@ Tested:
 - It requires another helper entity, which will be used in calling a Nanoflow
 - The helper entity has a reference set of all the objects that are loaded, and the search query. It is up to you to create a Nanoflow that returns a list of objects to be shown (act as a filter)
 
-### 7. Events
+### 7. Misc
+
+- This deals with state management and exposing an external method to select an item
+
+### 8. Events
 
 ![settings](/assets/settings7.png)
 
@@ -101,9 +103,6 @@ Tested:
 ## Issues, suggestions and feature requests
 
 Please report your issues [here](https://github.com/JelteMX/mendix-tree-view/issues)
-
-## Development and contribution
-[specify contribute]
 
 ## TODO
 
