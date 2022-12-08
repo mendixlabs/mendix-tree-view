@@ -71,11 +71,10 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
             return (
                 <div className={classNames("treeview-widget-control")}>
                     <Search
-                        placeholder="Search String"
+                        placeholder="Type to search"
                         loading={disabled}
                         allowClear
                         onChange={this.onChange}
-                        //value={store.searchQuery}
                     />
                 </div>
             );
