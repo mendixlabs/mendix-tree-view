@@ -127,9 +127,10 @@ export class NodeStore {
     }
 
     search = flow(function*(this: NodeStore, query: string) {
-        if (this.searchHandler === null) {
+        if (this.searchHandler === null || this.searchQuery == query) {
             return;
         }
+
         this.setLoading(true);
         this.searchQuery = query;
         const objects: mendix.lib.MxObject[] | null = yield this.searchHandler(query);
@@ -284,7 +285,7 @@ export class NodeStore {
     setLoading(state: boolean): void {
         this.isLoading = state;
     }
-
+    
     // Dimensions
 
     @action
@@ -379,7 +380,7 @@ export class NodeStore {
         const walkTree = (branch: arrayToTree.Tree<TreeObject>): void => {
             if (branch.children) {
                 const entry = this.findEntry(branch.guid);
-                if (entry) {
+                if (entry && !entry.isExpanded) {
                     entry.setExpanded(true);
                 }
                 branch.children.forEach((child: Tree<TreeObject>) => walkTree(child));
