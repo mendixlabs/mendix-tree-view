@@ -48,12 +48,19 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
         document.documentElement.style.removeProperty("--switcher-icon-bg");
     }
 
-    onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-        debounce((event: React.ChangeEvent<HTMLInputElement>) => this.onSearch(event), 800)(event)
-    };
+    /*onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+        debounce(
+            (event: React.ChangeEvent<HTMLInputElement>) => this.onSearch(event), 800)(event)
+    };*/
+
+    debouncedSearch = debounce((event: React.ChangeEvent<HTMLInputElement>) => {
+        this.onSearch(event)
+      }, 800
+    );
 
     onSearch = (event: React.ChangeEvent<HTMLInputElement>): void => {
         const { store } = this.props;
+
         if (event.target) {
             const val = event.target.value;
             store.search(val);
@@ -74,7 +81,7 @@ export class TreeViewComponent extends Component<TreeViewComponentProps> {
                         placeholder="Type to search"
                         loading={disabled}
                         allowClear
-                        onChange={this.onChange}
+                        onChange={this.debouncedSearch}
                     />
                 </div>
             );
