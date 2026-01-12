@@ -29,7 +29,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@mendix/pluggable-widgets-tools": "8.6.0",
+    "@mendix/pluggable-widgets-tools": "11.3.0",
     "@types/big.js": "^4.0.5",
     "@types/classnames": "^2.2.4",
     "@types/debounce": "^1.2.0",
